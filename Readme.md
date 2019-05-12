@@ -10,6 +10,7 @@ The following packages are required:
 torch
 torchvision
 numpy 
+skimage
 museval (for audio)
 ```
 

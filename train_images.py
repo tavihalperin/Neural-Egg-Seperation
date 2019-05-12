@@ -5,16 +5,29 @@ from models import Generator64
 import time
 import torchvision.utils as vutils
 import os
+from skimage.measure import compare_ssim
 
 if torch.cuda.is_available:
     device = 'cuda'
 else:
     device = 'cpu'
 
+
+def get_psnr(est, act):
+    return -10 * torch.log10(((act - est) ** 2).mean())
+
+def get_ssim(est, act):
+    ssim = 0
+    for i in range(len(est)):
+        ssim += compare_ssim(np.transpose(est[i], (1, 2, 0)),
+                             np.transpose(act[i], (1, 2, 0)),
+                             data_range=1, multichannel=True)
+    return ssim / len(est)
+
 def preprocess(x):
     x = x.transpose((0, 3, 1, 2))
     x = x / 255.0
-    return x
+    return 1-x
 
 def get_shoes_bags_dataset():
     shoes = preprocess(np.load('data/shoes/train.npy'))
@@ -40,7 +53,8 @@ test_Y = test_Y[:num_test_batches * batchsize]
 test_B = test_B[:num_test_batches * batchsize]
 test_X = test_X[:num_test_batches * batchsize]
 
-estimated_X = train_Y / 2
+fraction = .5
+estimated_X = train_Y * fraction
 
 for iter in range(num_iterations):
     start = time.time()
@@ -67,22 +81,40 @@ for iter in range(num_iterations):
         error /= num_batches
 
     # Infer on test set
+    psnr_X = 0
+    psnr_B = 0
+    ssim_X = 0
+    ssim_B = 0
     test_error = 0
     for i in range(num_test_batches):
         idx = i * batchsize + np.arange(batchsize)
         test_batch_Y = test_Y[idx]
         test_batch_B = test_B[idx]
+        test_batch_X = test_X[idx]
         test_batch_Y = torch.from_numpy(test_batch_Y).to(device).float()
         test_batch_B = torch.from_numpy(test_batch_B).to(device).float()
+        test_batch_X = torch.from_numpy(test_batch_X).to(device).float()
+
         batch_mask = model(test_batch_Y)
 
-        loss = criterion(batch_mask * test_batch_Y, test_batch_B)
+        predicted_B = batch_mask * test_batch_Y
+        predicted_X = (1-batch_mask) * test_batch_Y
+        loss = criterion(predicted_B, test_batch_B)
+
+        psnr_X += get_psnr(predicted_X, test_batch_X).item()
+        psnr_B += get_psnr(predicted_B, test_batch_B).item()
+        ssim_X += get_ssim(predicted_X.cpu().data.numpy(), test_batch_X.cpu().data.numpy())
+        ssim_B += get_ssim(predicted_B.cpu().data.numpy(), test_batch_B.cpu().data.numpy())
         test_error += loss.data.item()
+    psnr_X /= num_test_batches
+    psnr_B /= num_test_batches
+    ssim_X /= num_test_batches
+    ssim_B /= num_test_batches
     test_error /= num_test_batches
 
-    print('\niter %d done, train error %.5f, test error %.5f, time: %d seconds\n' % (
+    print('\niter %d done, train error %.5f, test error %.5f, time: %d seconds' % (
         iter, error, test_error, int(time.time() - start)))
-
+    print('psnr X: %.5f, psnr_B: %.5f, ssim_X: %.5f, ssim_B: %.5f\n' % (psnr_X, psnr_B, ssim_X, ssim_B))
     if not os.path.exists('ims'):
         os.makedirs('ims')
     vutils.save_image(test_batch_Y.data / 2, 'ims/testY.png', normalize=False)
