@@ -106,8 +106,8 @@ for iter in range(num_iterations):
     sdr_X = np.median(np.nan_to_num(X_metrics[0].squeeze()))
     sdr_B = np.median(np.nan_to_num(B_metrics[0].squeeze()))
 
-    print('\n%s iter %d done, train error %.5f, test error %.5f, time: %d seconds\n' % (dataset, iter, error, test_error, int(time.time() - start)))
-    print('test sdr B %.2f, X %.2f' % (sdr_X, sdr_B))
+    print('\n%s iter %d done, train error %.5f, test error %.5f, time: %d seconds' % (dataset, iter, error, test_error, int(time.time() - start)))
+    print('test sdr B %.2f, X %.2f\n' % (sdr_X, sdr_B))
 
     out_model = 'models/%s/nes' % dataset
     if not os.path.exists(out_model):
