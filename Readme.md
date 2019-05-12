@@ -32,10 +32,10 @@ python train_images.py
 ## Publications
 
 ```
-@article{halperin2018neural,
+@inproceedings{halperin2019neural,
   title={Neural separation of observed and unobserved distributions},
   author={Halperin, Tavi and Ephrat, Ariel and Hoshen, Yedid},
-  journal={arXiv preprint arXiv:1811.12739},
-  year={2018}
+  booktitle={Proceedings of the 36th International Conference on Machine Learning(ICML)},
+  year={2019},
 }
 ```
