@@ -8,7 +8,7 @@ import torchvision.utils as vutils
 import time
 import utils
 
-if torch.cuda.is_available:
+if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'

@@ -7,7 +7,7 @@ import torchvision.utils as vutils
 import os
 from skimage.measure import compare_ssim
 
-if torch.cuda.is_available:
+if torch.cuda.is_available():
     device = 'cuda'
 else:
     device = 'cpu'
